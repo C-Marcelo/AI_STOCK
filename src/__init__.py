@@ -36,7 +36,7 @@ import yfinance as yf  # 汇入 yfinance 套件
 from bs4 import BeautifulSoup  # 汇入 BeautifulSoup 套件
 from dotenv import load_dotenv
 from openai import OpenAI  # 汇入 OpenAI 套件
-from tools.common_tools import get_yahoo_code
+import tools.common_tools as tools
 
 # import pandas as pd # 汇入 pandas 套件
 
@@ -56,7 +56,7 @@ buy_price = input(
 )  # 您的购买价格，留空则忽略
 buy_price = float(buy_price)  # 您的购买价格，留空则忽略
 # 先根据股票市场简单识别股票代码
-ticker = get_yahoo_code(ticker)
+ticker = tools.get_yahoo_code(ticker)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -344,29 +344,31 @@ def format_etf_analysis_text(result):
         else:
             return default
 
+    currency = tools.get_currency_symbol(ticker)
+
     analysis_text = f"""
     ETF 分析报告 ({ticker}):
 
     **基金基本资料:**
-    - 基金规模 (AUM): {format_value(result['aum'], "{:,.0f}")} TWD
+    - 基金规模 (AUM): {format_value(result['aum'], "{:,.0f}")} {currency}
     - 费用率: {format_value(result['expense_ratio'], "{:.2f}")}%
     - 年初至今回报率 (YTD Return): {format_value(result['ytd_return'], "{:.2%}")}%
     - 三年平均回报率: {format_value(result['three_year_return'], "{:.2%}")}%
     - 五年平均回报率: {format_value(result['five_year_return'], "{:.2%}")}%
 
     **价格区间:**
-    - 52周最低价: {format_value(result['fifty_two_week_low'])} TWD
-    - 52周最高价: {format_value(result['fifty_two_week_high'])} TWD
-    - 50天平均价: {format_value(result['fifty_day_avg'])} TWD
-    - 200天平均价: {format_value(result['two_hundred_day_avg'])} TWD
+    - 52周最低价: {format_value(result['fifty_two_week_low'])} {currency}
+    - 52周最高价: {format_value(result['fifty_two_week_high'])} {currency}
+    - 50天平均价: {format_value(result['fifty_day_avg'])} {currency}
+    - 200天平均价: {format_value(result['two_hundred_day_avg'])} {currency}
 
     **技术指标:**
-    - 当前价格: {format_value(result['current_price'])} TWD
+    - 当前价格: {format_value(result['current_price'])} {currency}
     - 相对强弱指数 (RSI): {format_value(result['rsi'])}
     - MACD: {format_value(result['macd'])}
     - MACD Signal: {format_value(result['macd_signal'])}
-    - EMA 20日: {format_value(result['ema_20'])} TWD  # ***新增的EMA结果***
-    - SMA 50日: {format_value(result['sma_50'])} TWD  # ***新增的SMA结果***
+    - EMA 20日: {format_value(result['ema_20'])} {currency}  # ***新增的EMA结果***
+    - SMA 50日: {format_value(result['sma_50'])} {currency}  # ***新增的SMA结果***
     - ADX: {format_value(result['adx'])}             # ***新增的ADX结果***
     - 成交量: {format_value(result['volume'])}
     - 平均成交量: {format_value(result['average_volume'])}
@@ -657,7 +659,7 @@ def analyze_equity(stock, buy_price):
 
 
 # 格式化股票分析文本
-def format_analysis_text(result):
+def format_analysis_text(ticker, result):
     def format_value(value, fmt="{:.2f}", default="无法取得"):
         if isinstance(value, (int, float)):
             return fmt.format(value)
@@ -671,22 +673,24 @@ def format_analysis_text(result):
             return default
         else:
             return df.tail(5).to_string()  # 只显示最近5行，防止显示过长
+        
+    currency = tools.get_currency_symbol(ticker)
 
     analysis_text = f"""
     股票分析报告 ({ticker}):
 
     **股价和技术分析:**
-    - 当前价格: {format_value(result['current_price'])} TWD
-    - 购买价格: {format_value(result['buy_price']) if result['buy_price'] is not None else '无法取得'} TWD
+    - 当前价格: {format_value(result['current_price'])} {currency}
+    - 购买价格: {format_value(result['buy_price']) if result['buy_price'] is not None else '无法取得'} {currency}
     - 年化回报率: {format_value(result['annual_return'])}%
     - 相对强弱指数 (RSI): {format_value(result['rsi'])}
     - MACD: {format_value(result['macd'])}
     - MACD Signal: {format_value(result['macd_signal'])}
 
     **布林带指标:**
-    - 上轨带: {format_value(result['upperband'])} TWD
-    - 中轨带: {format_value(result['middleband'])} TWD
-    - 下轨带: {format_value(result['lowerband'])} TWD
+    - 上轨带: {format_value(result['upperband'])} {currency}
+    - 中轨带: {format_value(result['middleband'])} {currency}
+    - 下轨带: {format_value(result['lowerband'])} {currency}
 
     **随机震盪指标:**
     - 慢速K线: {format_value(result['slowk'])}
@@ -696,16 +700,16 @@ def format_analysis_text(result):
     - ATR: {format_value(result['atr'])}
 
     **趋势指标:**
-    - EMA 20日: {format_value(result['ema_20'])} TWD
-    - SMA 50日: {format_value(result['sma_50'])} TWD
+    - EMA 20日: {format_value(result['ema_20'])} {currency}
+    - SMA 50日: {format_value(result['sma_50'])} {currency}
     - ADX: {format_value(result['adx'])}
 
     **成交量指标:**
     - OBV: {format_value(result['obv'])}
-    - VWAP: {format_value(result['vwap'])} TWD
+    - VWAP: {format_value(result['vwap'])} {currency}
 
     **公司信息:**
-    - 市场资本化: {format_value(result['market_cap'], "{:,.0f}")} TWD
+    - 市场资本化: {format_value(result['market_cap'], "{:,.0f}")} {currency}
     - 市盈率: {result.get('pe_ratio', '无法取得')}
     - 每股收益 (EPS): {result.get('eps', '无法取得')}
     - 行业: {result.get('industry', '无法取得')}
@@ -722,8 +726,8 @@ def format_analysis_text(result):
     - 利润率: {result.get('profit_margin', '无法取得')}%
 
     **现金流指标:**
-    - 经营现金流: {format_value(result['operating_cash_flow'])} TWD
-    - 自由现金流: {format_value(result['free_cashflow'])} TWD
+    - 经营现金流: {format_value(result['operating_cash_flow'])} {currency}
+    - 自由现金流: {format_value(result['free_cashflow'])} {currency}
 
     **财务槓杆指标（Leverage Indicators）:**
     - 负债权益比率 (Debt to Equity Ratio): {format_value(result['debt_to_equity'])}
@@ -745,15 +749,15 @@ def format_analysis_text(result):
     - {format_value(result['roe'], "{:.2%}")}
 
     **企业价值 (EV):**
-    - {format_value(result['enterprise_value'], "{:,.0f}")} TWD
+    - {format_value(result['enterprise_value'], "{:,.0f}")} {currency}
 
     **每股净资产 (BVPS):**
     - {result.get('bvps', '无法取得')}
 
     **资产负债表摘要:**
-    - 总资产: {format_value(result['total_assets'], "{:,.0f}")} TWD
-    - 总负债: {format_value(result['total_liabilities'], "{:,.0f}")} TWD
-    - 股东权益总额: {format_value(result['total_equity'], "{:,.0f}")} TWD
+    - 总资产: {format_value(result['total_assets'], "{:,.0f}")} {currency}
+    - 总负债: {format_value(result['total_liabilities'], "{:,.0f}")} {currency}
+    - 股东权益总额: {format_value(result['total_equity'], "{:,.0f}")} {currency}
 
     **财务报表摘要:**
     - 资产负债表: {result['balance_sheet'].head() if result['balance_sheet'] is not None else '无法取得'}
@@ -824,42 +828,105 @@ def generate_stock_analysis_with_chatgpt(client, analysis_text):
     return bot_response  # 这是我刚加的
 
 
-# 主程序
-def main() -> None:
+def generate_stock_analysis_with_deepseek(api_key, analysis_text):
+    """
+    使用 Deepseek API 生成股票分析报告
+    """
+    
     client = OpenAI(
         # 从环境变量中获取 OpenAI API 密钥
         api_key=api_key,
         # 设置 OpenAI API 的 URL
-        base_url="https://api.gpt.ge/v1",  # 使用新版API的自定义基础URL
+        base_url="https://api.deepseek.com/v1",  # 使用新版API的自定义基础URL
     )
+    
+    messages = [
+        {
+            "role": "system",
+            "content": "你是一个专业的AI金融分析助手，擅长股票预测、企业财务分析和宏观经济分析。你可以根据数据进行详细的财务建模和量化分析。"
+        },
+        {
+            "role": "user",
+            "content": (
+                "根据以下提供的资料，请为投资者制定当前最适合的投资策略，并逐项分析以下技术指标和财务指标的意义："
+                "相对强弱指数（RSI）、MACD、布林带（Bollinger Bands）、"
+                "成交量指标（如OBV和VWAP）、财务比率（如市盈率、股息率）、以及盈利能力指标（如毛利率、营业利润率）。"
+                "特别要注意使用者的购入价格，根据当前价格提供止损建议。"
+                "目前价格是应该卖出、持有还是继续买入，并针对不同的投资情境（如短期与长期）提出具体的下一步行动建议"
+                "（如是否应调整仓位、关注其他市场趋势）。"
+                "在分析中请考虑当前的市场环境和经济形势。"
+                "总结部分请至少300字，并结合上述分析给出整体投资建议，使用简体中文回答：\n\n"
+                f"{analysis_text}"
+            )
+        }
+    ]
+    
+    try:
+        # response = requests.post(
+        #     url,
+        #     headers=headers,
+        #     json={
+        #         "model": "deepseek-chat",
+        #         "messages": messages,
+        #         "temperature": 0.7,
+        #         "max_tokens": 2000
+        #     }
+        # )
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=messages
+        )
+        return response.choices[0].message.content
+            
+    except Exception as e:
+        print(f"发生错误: {e}")
+        return None
+
+
+# 主程序
+def main() -> None:
+    
     result = analyze_stock(ticker, buy_price)
     if result:
         if "aum" in result:  # 如果分析结果中包含 AUM，则表示是 ETF 分析
-            analysis_text = format_etf_analysis_text(result)
+            analysis_text = format_etf_analysis_text(ticker, result)
         else:
-            analysis_text = format_analysis_text(result)
+            analysis_text = format_analysis_text(ticker, result)
 
         while True:  # 无限循环，直到用户输入正确
             api = input(
-                "请选择生成报告的 API 服务 \n1: ChatGPT\n2: Gemini API\n其他: 不生成报告\n请输入: "
+                "请选择生成报告的 API 服务 \n1: ChatGPT\n2: Deepseek API\n其他: 不生成报告\n请输入: "
             )
-            if api == "1":
-                if client.api_key:
-                    openai_analysis = generate_stock_analysis_with_chatgpt(
-                        client, analysis_text
-                    )
+            if api == "1": # 调用client还未实现
+                # if client.api_key:
+                #     openai_analysis = generate_stock_analysis_with_chatgpt(
+                #         client, analysis_text
+                #     )
+                #     full_report = (
+                #         (
+                #             f"{analysis_text}\n\n"
+                #             f"ChatGPT 生成的分析报告:\n{openai_analysis}"
+                #         )
+                #         if openai_analysis  # 刚刚这个值是None，bool(None) == False
+                #         else "无法生成 ChatGPT 分析报告。"
+                #     )
+                #     break
+                # else:
+                #     full_report = f"无法生成 ChatGPT 分析报告，因为 API 密钥缺失。\n{analysis_text}"
+                    break
+            elif api == "2":  # 用户选择使用 Deepseek
+                if api_key:  # 确保有 API key
+                    deepseek_analysis = generate_stock_analysis_with_deepseek(api_key, analysis_text)
                     full_report = (
-                        (
-                            f"{analysis_text}\n\n"
-                            f"ChatGPT 生成的分析报告:\n{openai_analysis}"
-                        )
-                        if openai_analysis  # 刚刚这个值是None，bool(None) == False
-                        else "无法生成 ChatGPT 分析报告。"
+                        f"{analysis_text}\n\n"
+                        f"Deepseek 生成的分析报告:\n{deepseek_analysis}"
+                        if deepseek_analysis
+                        else "无法生成 Deepseek 分析报告。"
                     )
                     break
                 else:
-                    full_report = f"无法生成 ChatGPT 分析报告，因为 API 密钥缺失。\n{analysis_text}"
-                    break
+                    full_report = f"无法生成 Deepseek 分析报告，因为 API 密钥缺失。\n{analysis_text}"
+                    
             else:
                 print("输入错误，请重新输入。")
         print(full_report)
