@@ -393,7 +393,6 @@ def analyze_equity(stock, buy_price):
 
     # 检查是否有 'Adj Close' 列，如果没有则使用 'Close'
     closing_column = "Adj Close" if "Adj Close" in stock_data.columns else "Close"
-
     # 如果成功获取到实时价格，使用实时价格替代历史数据中的最后一个收盘价
     if current_price:
         stock_data.loc[stock_data.index[-1], closing_column] = current_price
@@ -862,18 +861,8 @@ def generate_stock_analysis_with_deepseek(api_key, analysis_text):
     ]
     
     try:
-        # response = requests.post(
-        #     url,
-        #     headers=headers,
-        #     json={
-        #         "model": "deepseek-chat",
-        #         "messages": messages,
-        #         "temperature": 0.7,
-        #         "max_tokens": 2000
-        #     }
-        # )
         response = client.chat.completions.create(
-            model="deepseek-chat",
+            model="deepseek-reasoner",
             messages=messages
         )
         return response.choices[0].message.content
