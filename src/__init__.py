@@ -859,7 +859,6 @@ def generate_stock_analysis_with_deepseek(api_key, analysis_text):
             )
         }
     ]
-    print(messages)
     try:
         response = client.chat.completions.create(
             model="deepseek-reasoner",
