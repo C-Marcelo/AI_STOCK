@@ -145,7 +145,7 @@ def calculate_bollinger_bands(prices, timeperiod=20, nbdevup=2, nbdevdn=2, matyp
     :return: upperband, middleband, lowerband
     """
     upperband, middleband, lowerband = ta.BBANDS(
-        prices, timeperiod=timeperiod, nbdevup=nbdevup, nbdevdn=nbdevdn, matype=matype
+        prices, timeperiod=timeperiod, nbdevup=nbdevup, nbdevdn=nbdevdn, matype=ta._ta_lib.MA_Type.SMA
     )
     return upperband, middleband, lowerband
 
@@ -824,7 +824,7 @@ def generate_stock_analysis_with_chatgpt(client, analysis_text):
 
     except Exception as e:
         print(f"发生错误: {e}")
-    return bot_response  # 这是我刚加的
+    return
 
 
 def generate_stock_analysis_with_deepseek(api_key, analysis_text):
@@ -877,7 +877,7 @@ def main() -> None:
     result = analyze_stock(ticker, buy_price)
     if result:
         if "aum" in result:  # 如果分析结果中包含 AUM，则表示是 ETF 分析
-            analysis_text = format_etf_analysis_text(ticker, result)
+            analysis_text = format_etf_analysis_text(result)
         else:
             analysis_text = format_analysis_text(ticker, result)
 
@@ -911,13 +911,12 @@ def main() -> None:
                         if deepseek_analysis
                         else "无法生成 Deepseek 分析报告。"
                     )
+                    print(full_report)
                     break
                 else:
-                    full_report = f"无法生成 Deepseek 分析报告，因为 API 密钥缺失。\n{analysis_text}"
-                    
+                    print(f"无法生成 Deepseek 分析报告，因为 API 密钥缺失。\n{analysis_text}")
             else:
                 print("输入错误，请重新输入。")
-        print(full_report)
 
 
 if __name__ == "__main__":
